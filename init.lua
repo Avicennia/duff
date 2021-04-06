@@ -15,17 +15,17 @@ duff.register_duff = function(def) -- Registers a new duff
     end
 end
 
-duff.node_duff_map = {} -- key-value storage for interacting ([nodename] = {duffname1, duffname2})
-duff.collate_source_nodes = function() -- Searches all registered duffs to register particles for specific node sources
+duff.node_duff_map = {} -- key-value array storage for accessing all duffs that a node may have, [nodename] = {duffname1, duffname2}
+duff.collate_source_nodes = function() -- Searches all registered duffs to register duffs to specific node sources
     for k,v in pairs(duff.duffs)do
         if(v.source_node and v.particle_def)then
             local nodename = v.source_node
             local nodegroups = minetest.registered_nodes[nodename].groups
             nodegroups["duffy"] = 1
-            minetest.override_item(nodename, {groups = nodegroups}) -- add guarding
+            minetest.override_item(nodename, {groups = nodegroups}) -- get groups of node, give it the duffy group so that it will produce duff.
             if(duff.node_duff_map[v.source_node])then
-                table.insert(duff.node_duff_map[v.source_node],v.name)
-            else duff.node_duff_map[v.source_node] = {v.name}
+                table.insert(duff.node_duff_map[v.source_node],v.name) -- if this node is already in the map then add to existing duff
+            else duff.node_duff_map[v.source_node] = {v.name} -- otherwise make a new entry for this node, starting with this duff
             end
         end
     end
@@ -59,9 +59,9 @@ duff.shed_particle = function(pos, duff_def) -- Causes particles to fall as defi
     if(pos and duff_def)then
         local bas = {x = 0, y = 0, z = 0}
         duff_def.minpos = {x = pos.x - 0.5, y = pos.y-0.4, z = pos.z - 0.5}
-        duff_def.maxpos = {x = pos.x + 0.5, y = pos.y, z = pos.z + 0.5}
+        duff_def.maxpos = {x = pos.x + 0.5, y = pos.y-0.3, z = pos.z + 0.5}
         duff_def.minvel = duff_def.minvel or bas
-        duff_def.maxvel = duff_def.maxvel or duff.wind or {x = 0.5, y = -0.5, z = 0.2}
+        duff_def.maxvel = duff_def.maxvel or duff.wind or {x = 0.01, y = -0.5, z = 0.01}
         minetest.add_particlespawner(duff_def)
     end
 end
@@ -80,8 +80,8 @@ nodecore.register_limited_abm(
         label = "Dirty Little Littering Node",
         nodenames = {"group:duffy"},
         neighbors = {"air"},
-        interval = 3,
-        chance = 8,
+        interval = 1,
+        chance = 10,
         catch_up = false,
         action = function(pos,node)
             local nodename = node.name
@@ -130,3 +130,9 @@ nodecore.register_limited_abm(
             end
         end
     })
+
+    local function test(x,dothing)
+        x = x^2
+        dothing(x)
+    end
+    minetest.after(5, function() test(5, function(k) say(k) end)end)
